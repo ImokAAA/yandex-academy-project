@@ -41,6 +41,25 @@ class CourierSerializer(serializers.Serializer):
         #return Courier.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        print("instanse: " + str(instance))
-        print("validated data : " + str(validated_data))
-        return True
+        instance.courier_id = validated_data.get('courier_id', instance.courier_id)
+        instance.courier_type = validated_data.get('courier_type', instance.courier_type)
+        if validated_data.get('regions'):
+            instance.regions.clear()
+            instance.save()
+            for region in validated_data['regions']:
+                courier_region, _ = CourierRegion.objects.get_or_create(
+                region = region, 
+                ) 
+                instance.regions.add(courier_region)
+        if validated_data.get('working_hours'):
+            instance.workinghour_set.all().delete()
+            for working_hour in validated_data['working_hours']:
+                start_time_list = working_hour.split('-')[0].split(':')
+                start_time = datetime.time(int(start_time_list[0]), int(start_time_list[1]))
+
+                end_time_list = working_hour.split('-')[1].split(':')
+                end_time = datetime.time(int(end_time_list[0]), int(end_time_list[1]))
+            
+                instance.workinghour_set.get_or_create(start_time = start_time, end_time = end_time)
+        instance.save()
+        return instance

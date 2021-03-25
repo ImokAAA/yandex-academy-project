@@ -43,7 +43,6 @@ class CourierDetail(APIView):
 
     def patch(self, request, pk):
         courier = self.get_object(pk)
-        print('courier: ' + str(courier) )
         couriers = request.data.get('regions')
         serializer = CourierSerializer(courier, data=request.data, partial = True)
         if serializer.is_valid():
