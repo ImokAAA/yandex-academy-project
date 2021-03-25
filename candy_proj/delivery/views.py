@@ -26,3 +26,37 @@ class CourierList(APIView):
         return Response({"validation_error": {"couriers": couriers_id}}, status=status.HTTP_400_BAD_REQUEST, )
 
 
+class CourierDetail(APIView):
+    """
+    Retrieve, update a courier instance.
+    """
+    def get_object(self, pk):
+        try:
+            return Courier.objects.get(courier_id=pk)
+        except Courier.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk):
+        snippet = self.get_object(pk)
+        serializer = CourierSerializer(snippet)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        courier = self.get_object(pk)
+        print('courier: ' + str(courier) )
+        couriers = request.data.get('regions')
+        serializer = CourierSerializer(courier, data=request.data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            courier = self.get_object(pk)
+            regions = [region.region for region in courier.regions.all()]
+            working_hours = [str(working_hour.start_time.strftime("%H:%M")) + "-" + str(working_hour.end_time.strftime("%H:%M")) for working_hour in courier.workinghour_set.all()]
+            courier_dic = {
+                "courier_id": courier.courier_id,
+                "courier_type": courier.courier_type,
+                "regions": regions,
+                "working_hours": working_hours
+                }
+            
+            return Response(courier_dic)
+        return Response(status=status.HTTP_400_BAD_REQUEST)

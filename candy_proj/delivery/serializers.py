@@ -30,12 +30,17 @@ class CourierSerializer(serializers.Serializer):
             courier.regions.add(courier_region)
         for working_hour in validated_data['working_hours']:
             start_time_list = working_hour.split('-')[0].split(':')
-            start_time = datetime.time(int(start_time_list[0]), int(start_time_list[1]), 0)
+            start_time = datetime.time(int(start_time_list[0]), int(start_time_list[1]))
 
             end_time_list = working_hour.split('-')[1].split(':')
-            end_time = datetime.time(int(end_time_list[0]), int(end_time_list[1]), 0)
+            end_time = datetime.time(int(end_time_list[0]), int(end_time_list[1]))
             
             courier.workinghour_set.get_or_create(start_time = start_time, end_time = end_time)
             courier.save()
         return True
         #return Courier.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        print("instanse: " + str(instance))
+        print("validated data : " + str(validated_data))
+        return True
