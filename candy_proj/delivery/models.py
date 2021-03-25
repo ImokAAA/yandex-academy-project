@@ -1,32 +1,26 @@
 from django.db import models
-import json
+
+class CourierRegion(models.Model):
+    region          = models.IntegerField(primary_key = True)
+
 
 class Courier(models.Model):
-    """ Stores data about couriers """
-    courier_id      = models.AutoField(primary_key=True)
-    courier_type    = models.CharField(max_length=255)
-    regions         = models.CharField(max_length=255) #used with methods
-    working_hours   = models.CharField(max_length=255) #used with methods
+    courier_id      = models.IntegerField(primary_key=True)
+    class CourierTypes(models.TextChoices):
+        FOOT = 'f'
+        BIKE = 'b'
+        CAR = 'c'
 
-    # used for regions
-    def set_regions(self, regions_list):
-        "Converts list to string to store in database"
-        self.regions = json.dumps(regions_list)
-
-    def get_regions(self):
-        "Converts string to list to get from database"
-        return json.loads(self.regions) 
-    
-    #used for working_hours
-    def set_working_hours(self, working_hours_list):
-        "Converts list to string to store in database"
-        self.working_hours = json.dumps(working_hours_list)
-
-    def get_working_hours(self):
-        "Converts string to list to get from database"
-        return json.loads(self.working_hours)
+    courier_type    = models.CharField(max_length=1, choices=CourierTypes.choices)
+    regions         = models.ManyToManyField(CourierRegion)
+    #workinghour_set can be used
+    rating          = models.FloatField(null = True, blank = True)
+    earnings        = models.FloatField(null = True, blank = True)
 
 
- 
+class WorkingHour(models.Model):
+    courier_id      = models.ForeignKey(Courier, on_delete=models.CASCADE) 
+    start_time      = models.TimeField()
+    end_time        = models.TimeField()
 
 
