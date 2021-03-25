@@ -63,3 +63,5 @@ class CourierSerializer(serializers.Serializer):
                 instance.workinghour_set.get_or_create(start_time = start_time, end_time = end_time)
         instance.save()
         return instance
+
+    
