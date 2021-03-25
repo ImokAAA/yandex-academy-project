@@ -24,3 +24,5 @@ class CourierList(APIView):
             if serializer.errors[i]:
                 couriers_id.append({"id": couriers[i]['courier_id']})
         return Response({"validation_error": {"couriers": couriers_id}}, status=status.HTTP_400_BAD_REQUEST, )
+
+

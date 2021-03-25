@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import serializers
 
-from .models import Courier
+from .models import Courier, CourierRegion, WorkingHour
+import datetime
 
 class CourierSerializer(serializers.Serializer):
     courier_id = serializers.IntegerField()
@@ -17,5 +18,24 @@ class CourierSerializer(serializers.Serializer):
     
     def create(self, validated_data):
         print("validated data: " + str(validated_data))
+        courier, _ = Courier.objects.get_or_create(
+            courier_id = validated_data['courier_id'],
+            courier_type=validated_data['courier_type'], 
+            )
+        courier.save()
+        for region in validated_data['regions']:
+            courier_region, _ = CourierRegion.objects.get_or_create(
+            region = region, 
+            ) 
+            courier.regions.add(courier_region)
+        for working_hour in validated_data['working_hours']:
+            start_time_list = working_hour.split('-')[0].split(':')
+            start_time = datetime.time(int(start_time_list[0]), int(start_time_list[1]), 0)
+
+            end_time_list = working_hour.split('-')[1].split(':')
+            end_time = datetime.time(int(end_time_list[0]), int(end_time_list[1]), 0)
+            
+            courier.workinghour_set.get_or_create(start_time = start_time, end_time = end_time)
+            courier.save()
         return True
         #return Courier.objects.create(**validated_data)
