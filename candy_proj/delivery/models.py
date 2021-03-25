@@ -25,3 +25,21 @@ class WorkingHour(models.Model):
     def __str__(self):
         return str(self.start_time) +" - "+ str(self.end_time)
 
+
+
+class Order(models.Model):
+    order_id        = models.IntegerField(primary_key=True)
+    weight          = models.FloatField(null = True, blank = True)
+    region          = models.IntegerField()
+
+    def __str__(self):
+        return str(self.order_id)
+
+class DeliveryHour(models.Model):
+    courier_id      = models.ForeignKey(Order, on_delete=models.CASCADE) 
+    start_time      = models.TimeField()
+    end_time        = models.TimeField()
+
+    def __str__(self):
+        return str(self.start_time) +" - "+ str(self.end_time)
+
