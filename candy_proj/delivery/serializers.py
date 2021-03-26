@@ -115,9 +115,13 @@ class AssignSerializer(serializers.Serializer):
                         for delivery_hour in order.deliveryhour_set.all():
                             time_is_common = working_hour.start_time >= delivery_hour.start_time and working_hour.start_time < delivery_hour.end_time or working_hour.end_time > delivery_hour.start_time and working_hour.end_time <= delivery_hour.end_time
                             if time_is_common:
+                                order.assign_time = datetime.datetime.utcnow().isoformat()
+                                order.save()
                                 courier.order_set.add(order)
                                 common_orders_weight += order.weight
+                
                 if common_orders_weight > courier_max_weight:
+                    order.assign_time = None
                     courier.order_set.remove(order)
                     common_orders_weight -= order.weight
                     break 
@@ -125,6 +129,23 @@ class AssignSerializer(serializers.Serializer):
         return True
 
 
+class CompleteSerializer(serializers.Serializer):
+    courier_id = serializers.IntegerField()
+    order_id = serializers.IntegerField()
+    complete_time = serializers.CharField()
+
+    def create(self, validated_data):
+        courier = Courier.objects.get(
+            courier_id = validated_data['courier_id'] 
+            )
+        order = Order.objects.get(
+            order_id = validated_data['order_id'] 
+            )
+        
+        order.complete_time = validated_data['complete_time']
+        order.save()               
+
+        return True
     
 
     

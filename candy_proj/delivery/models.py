@@ -33,8 +33,8 @@ class Order(models.Model):
     courier_id      = models.ForeignKey(Courier, on_delete=models.CASCADE, null = True, blank = True)
     weight          = models.FloatField(null = True, blank = True)
     region          = models.IntegerField()
-    assign_time     = models.TimeField(null = True, blank = True)
-    complete_time   = models.TimeField(null = True, blank = True)
+    assign_time     = models.DateTimeField(null = True, blank = True)
+    complete_time   = models.DateTimeField(null = True, blank = True)
 
     def __str__(self):
         return str(self.order_id)

@@ -1,5 +1,5 @@
 from .models import Courier, Order
-from .serializers import CourierSerializer, OrderSerializer, AssignSerializer
+from .serializers import CourierSerializer, OrderSerializer, AssignSerializer, CompleteSerializer
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -89,12 +89,40 @@ class AssignOrder(APIView):
     def post(self, request):
         serializer = AssignSerializer(data=request.data)
         orders_id = []
-        courier = Courier.objects.get(
-            courier_id = request.data['courier_id'] 
-            )
+        try:
+            courier = Courier.objects.get(
+                courier_id = request.data['courier_id'] 
+                )
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST )    
         if serializer.is_valid():
             if serializer.save():
                 for order in courier.order_set.all():
+                    assign_time = order.assign_time
                     orders_id.append({"id": order.order_id})
-                return Response({"orders": orders_id}, status=status.HTTP_200_OK)
+                return Response({"orders": orders_id, "assign_time": assign_time }, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST )
+
+
+class CompleteOrder(APIView):
+    """
+    This class completes order of courier
+    """
+    def post(self, request):
+        serializer = CompleteSerializer(data=request.data)
+        try:
+            courier = Courier.objects.get(
+                courier_id = request.data['courier_id'] 
+                )
+            order = Order.objects.get(
+                order_id = request.data['order_id'] 
+                )
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST )
+
+        if order in courier.order_set.all() and order.assign_time:
+            if serializer.is_valid():
+                if serializer.save():
+                    return Response({"order_id": order.order_id}, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_400_BAD_REQUEST )
         return Response(status=status.HTTP_400_BAD_REQUEST )
