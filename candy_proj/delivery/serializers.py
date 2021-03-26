@@ -92,6 +92,39 @@ class OrderSerializer(serializers.Serializer):
         return True
 
 
+class AssignSerializer(serializers.Serializer):
+    courier_id = serializers.IntegerField()
+    
+    def create(self, validated_data):
+        courier = Courier.objects.get(
+            courier_id = validated_data['courier_id'] 
+            )
+        if courier.courier_type == 'foot':
+            courier_max_weight = 10
+        elif courier.courier_type == 'bike':
+            courier_max_weight = 15
+        elif courier.courier_type == 'car':
+            courier_max_weight = 50
+        common_orders_weight = 0
+       
+        if not courier.order_set.all():
+            for order in Order.objects.order_by('weight'):
+                region_is_common = order.region in [ region.region for region in courier.regions.all()]
+                if not order.courier_id and not order.complete_time and region_is_common:
+                    for working_hour in courier.workinghour_set.all():
+                        for delivery_hour in order.deliveryhour_set.all():
+                            time_is_common = working_hour.start_time >= delivery_hour.start_time and working_hour.start_time < delivery_hour.end_time or working_hour.end_time > delivery_hour.start_time and working_hour.end_time <= delivery_hour.end_time
+                            if time_is_common:
+                                courier.order_set.add(order)
+                                common_orders_weight += order.weight
+                if common_orders_weight > courier_max_weight:
+                    courier.order_set.remove(order)
+                    common_orders_weight -= order.weight
+                    break 
+        courier.save()
+        return True
+
+
     
 
     

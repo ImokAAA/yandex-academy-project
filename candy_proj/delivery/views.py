@@ -1,5 +1,5 @@
 from .models import Courier, Order
-from .serializers import CourierSerializer, OrderSerializer
+from .serializers import CourierSerializer, OrderSerializer, AssignSerializer
 from django.http import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -79,3 +79,22 @@ class OrderList(APIView):
             if serializer.errors[i]:
                 orders_id.append({"id": orders[i]['order_id']})
         return Response({"validation_error": {"orders": orders_id}}, status=status.HTTP_400_BAD_REQUEST, )
+
+
+class AssignOrder(APIView):
+    """
+    This class assigns orders to courier
+    """
+
+    def post(self, request):
+        serializer = AssignSerializer(data=request.data)
+        orders_id = []
+        courier = Courier.objects.get(
+            courier_id = request.data['courier_id'] 
+            )
+        if serializer.is_valid():
+            if serializer.save():
+                for order in courier.order_set.all():
+                    orders_id.append({"id": order.order_id})
+                return Response({"orders": orders_id}, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST )
