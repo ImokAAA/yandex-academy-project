@@ -120,7 +120,7 @@ class CompleteOrder(APIView):
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST )
 
-        if order in courier.order_set.all() and order.assign_time:
+        if courier.courier_id == order.courier_id and order.assign_time:
             if serializer.is_valid():
                 if serializer.save():
                     return Response({"order_id": order.order_id}, status=status.HTTP_200_OK)
