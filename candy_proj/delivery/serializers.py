@@ -106,7 +106,7 @@ class AssignSerializer(serializers.Serializer):
             courier_max_weight = 50
         common_orders_weight = 0
        
-        if not all[ order.complete_time for order in courier.order_set.all()]:
+        if not courier.order_set.all():
             for order in Order.objects.order_by('weight'):
                 region_is_common = order.region in [ region.region for region in courier.regions.all()]
                 if not order.courier_id and not order.complete_time and region_is_common:
