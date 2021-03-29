@@ -15,15 +15,31 @@ class CourierList(APIView):
         couriers = request.data.get('data')
         serializer = CourierSerializer(data=couriers, many = True)
         couriers_id = []
-        if serializer.is_valid():
+        couriers_error = []
+        not_described_field = False
+        courier_dic = {
+            "courier_id": 1,
+            "courier_type": 2,
+            "regions": 3,
+            "working_hours": 1
+        }
+        for courier in couriers:
+            if set(courier.keys()) != set(courier_dic.keys()) \
+            or not courier['courier_type'] in ['bike', 'foot', 'car'] \
+                or courier["courier_id"] in [cour.courier_id for cour in Courier.objects.all()]:
+                not_described_field = True
+                couriers_error.append({"id": courier['courier_id']})
+        if not serializer.is_valid():     
+            for i in range(len(couriers)):
+                if serializer.errors[i] and not {"id": couriers[i]['courier_id']} in couriers_error:
+                    couriers_error.append({"id": couriers[i]['courier_id']})
+        if serializer.is_valid() and not not_described_field:
             serializer.save()
             for courier in couriers:
                 couriers_id.append({"id": courier['courier_id']})
             return Response({"couriers": couriers_id}, status=status.HTTP_201_CREATED)
-        for i in range(len(couriers)):
-            if serializer.errors[i]:
-                couriers_id.append({"id": couriers[i]['courier_id']})
-        return Response({"validation_error": {"couriers": couriers_id}}, status=status.HTTP_400_BAD_REQUEST, )
+        
+        return Response({"validation_error": {"couriers": couriers_error}}, status=status.HTTP_400_BAD_REQUEST, )
 
 
 class CourierDetail(APIView):
