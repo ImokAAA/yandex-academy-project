@@ -59,9 +59,20 @@ class CourierDetail(APIView):
 
     def patch(self, request, pk):
         courier = self.get_object(pk)
-        couriers = request.data.get('regions')
         serializer = CourierSerializer(courier, data=request.data, partial = True)
-        if serializer.is_valid():
+        have_undescribed_field = False
+        have_correct_courier_id_format = True
+
+        for key in request.data.keys():
+            print("key: " + key)
+            if key != "courier_id" and key != "courier_type" \
+                and key != "regions" and key != "working_hours" :
+                    have_undescribed_field = True
+            if key == "courier_type" and not request.data["courier_type"] in ["foot", "bike", "car"]:
+                have_correct_courier_id_format = False 
+        if serializer.is_valid() \
+            and have_correct_courier_id_format \
+                and not have_undescribed_field:
             serializer.save()
             courier = self.get_object(pk)
             regions = [region.region for region in courier.regions.all()]
@@ -86,15 +97,33 @@ class OrderList(APIView):
         orders = request.data.get('data')
         serializer = OrderSerializer(data=orders, many = True)
         orders_id = []
-        if serializer.is_valid():
+        orders_errors = []
+        not_described_field = False
+        order_dic = {
+            "order_id": 1,
+            "weight": 2,
+            "region": 3,
+            "delivery_hours": 1
+        }
+        for order in orders:
+            if set(order.keys()) != set(order_dic.keys()) \
+                or order["order_id"] in [orde.order_id for orde in Order.objects.all()] \
+                    or not order["delivery_hours"]:
+                not_described_field = True
+                orders_errors.append({"id": order['order_id']})
+        if not serializer.is_valid() :
+            for i in range(len(orders)):
+                print("orders_errors: " + str(orders_errors))
+                if serializer.errors[i] and not {"id": orders[i]['order_id']} in orders_errors:
+                    orders_errors.append({"id": orders[i]['order_id']})
+
+        if serializer.is_valid() and not not_described_field:
             serializer.save()
             for order in orders:
                 orders_id.append({"id": order['order_id']})
             return Response({"orders": orders_id}, status=status.HTTP_201_CREATED)
-        for i in range(len(orders)):
-            if serializer.errors[i]:
-                orders_id.append({"id": orders[i]['order_id']})
-        return Response({"validation_error": {"orders": orders_id}}, status=status.HTTP_400_BAD_REQUEST, )
+        
+        return Response({"validation_error": {"orders": orders_errors}}, status=status.HTTP_400_BAD_REQUEST, )
 
 
 class AssignOrder(APIView):
@@ -116,7 +145,11 @@ class AssignOrder(APIView):
                 for order in courier.order_set.all():
                     assign_time = order.assign_time
                     orders_id.append({"id": order.order_id})
-                return Response({"orders": orders_id, "assign_time": assign_time }, status=status.HTTP_200_OK)
+                if orders_id:
+                    return Response({"orders": orders_id, "assign_time": assign_time }, status=status.HTTP_200_OK)
+                return Response({"orders": []}, status=status.HTTP_200_OK)
+                
+
         return Response(status=status.HTTP_400_BAD_REQUEST )
 
 

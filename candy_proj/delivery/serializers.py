@@ -42,7 +42,7 @@ class CourierSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         instance.courier_id = validated_data.get('courier_id', instance.courier_id)
         instance.courier_type = validated_data.get('courier_type', instance.courier_type)
-        if validated_data.get('regions'):
+        if "regions" in validated_data.keys():
             instance.regions.clear()
             instance.save()
             for region in validated_data['regions']:
@@ -50,7 +50,7 @@ class CourierSerializer(serializers.Serializer):
                 region = region, 
                 ) 
                 instance.regions.add(courier_region)
-        if validated_data.get('working_hours'):
+        if 'working_hours' in validated_data.keys():
             instance.workinghour_set.all().delete()
             for working_hour in validated_data['working_hours']:
                 start_time_list = working_hour.split('-')[0].split(':')
@@ -61,6 +61,36 @@ class CourierSerializer(serializers.Serializer):
             
                 instance.workinghour_set.get_or_create(start_time = start_time, end_time = end_time)
         instance.save()
+
+        if instance.courier_type == 'foot':
+            courier_max_weight = 10
+        elif instance.courier_type == 'bike':
+            courier_max_weight = 15
+        elif instance.courier_type == 'car':
+            courier_max_weight = 50
+        common_orders_weight = 0
+       
+        for order in instance.order_set.order_by('-weight'):
+            region_is_common = order.region in [ region.region for region in instance.regions.all()]
+            if not order.complete_time and not region_is_common:
+                instance.order_set.remove(order)
+                instance.save()
+                continue
+            for working_hour in instance.workinghour_set.all():
+                for delivery_hour in order.deliveryhour_set.all():
+                    time_is_common = working_hour.start_time >= delivery_hour.start_time and working_hour.start_time < delivery_hour.end_time or working_hour.end_time > delivery_hour.start_time and working_hour.end_time <= delivery_hour.end_time
+                    if not time_is_common:
+                        instance.order_set.remove(order)
+                        instance.save()
+                        continue
+            common_orders_weight += order.weight
+        
+        
+        while common_orders_weight > courier_max_weight:
+            order_max = instance.order_set.order_by('-weight')[0]
+            common_orders_weight -= order_max.weight
+            instance.order_set.remove(order_max)
+            instance.save()
         return instance
 
 

@@ -30,7 +30,7 @@ class WorkingHour(models.Model):
 
 class Order(models.Model):
     order_id        = models.IntegerField(primary_key=True)
-    courier_id      = models.ForeignKey(Courier, on_delete=models.CASCADE, null = True, blank = True)
+    courier_id      = models.ForeignKey(Courier, on_delete=models.SET_NULL, null = True, blank = True)
     weight          = models.FloatField(null = True, blank = True)
     region          = models.IntegerField()
     assign_time     = models.DateTimeField(null = True, blank = True)
