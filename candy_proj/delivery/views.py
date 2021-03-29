@@ -144,7 +144,8 @@ class AssignOrder(APIView):
             if serializer.save():
                 for order in courier.order_set.all():
                     assign_time = order.assign_time
-                    orders_id.append({"id": order.order_id})
+                    if not order.complete_time:
+                        orders_id.append({"id": order.order_id})
                 if orders_id:
                     return Response({"orders": orders_id, "assign_time": assign_time }, status=status.HTTP_200_OK)
                 return Response({"orders": []}, status=status.HTTP_200_OK)
@@ -167,11 +168,14 @@ class CompleteOrder(APIView):
                 order_id = request.data['order_id'] 
                 )
         except:
-            return Response(status=status.HTTP_400_BAD_REQUEST )
+            return Response("ha",status=status.HTTP_400_BAD_REQUEST )
 
-        if courier.courier_id == order.courier_id and order.assign_time:
+
+        if courier.courier_id == order.courier_id and order.complete_time == None:
             if serializer.is_valid():
-                if serializer.save():
-                    return Response({"order_id": order.order_id}, status=status.HTTP_200_OK)
-            return Response(status=status.HTTP_400_BAD_REQUEST )
-        return Response(status=status.HTTP_400_BAD_REQUEST )
+                serializer.save()
+                return Response({"order_id": order.order_id}, status=status.HTTP_200_OK)
+            else:
+                return Response("hi",status=status.HTTP_400_BAD_REQUEST )
+        else:
+            return Response("ho",status=status.HTTP_400_BAD_REQUEST )

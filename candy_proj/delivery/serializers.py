@@ -129,31 +129,44 @@ class AssignSerializer(serializers.Serializer):
             courier_id = validated_data['courier_id'] 
             )
         if courier.courier_type == 'foot':
-            courier_max_weight = 10
+            courier_max_weight = 10.0000
         elif courier.courier_type == 'bike':
-            courier_max_weight = 15
+            courier_max_weight = 15.0000
         elif courier.courier_type == 'car':
-            courier_max_weight = 50
+            courier_max_weight = 50.0000
         common_orders_weight = 0
        
-        if not courier.order_set.all():
+        have_assigned_orders = False
+        for order in courier.order_set.all():
+            if order.assign_time and not order.complete_time:
+                have_assigned_orders = True
+
+        if not have_assigned_orders:
             for order in Order.objects.order_by('weight'):
                 region_is_common = order.region in [ region.region for region in courier.regions.all()]
                 if not order.courier_id and not order.complete_time and region_is_common:
                     for working_hour in courier.workinghour_set.all():
                         for delivery_hour in order.deliveryhour_set.all():
-                            time_is_common = working_hour.start_time >= delivery_hour.start_time and working_hour.start_time < delivery_hour.end_time or working_hour.end_time > delivery_hour.start_time and working_hour.end_time <= delivery_hour.end_time
+                            time_is_common = working_hour.start_time >= delivery_hour.start_time \
+                                and working_hour.start_time < delivery_hour.end_time \
+                                    or working_hour.end_time > delivery_hour.start_time \
+                                        and working_hour.end_time <= delivery_hour.end_time
                             if time_is_common:
                                 order.assign_time = datetime.datetime.utcnow().isoformat()
                                 order.save()
                                 courier.order_set.add(order)
+                                courier.save()
                                 common_orders_weight += order.weight
                 
+                if common_orders_weight == courier_max_weight:
+                    break
                 if common_orders_weight > courier_max_weight:
                     order.assign_time = None
                     courier.order_set.remove(order)
+                    courier.save()
                     common_orders_weight -= order.weight
-                    break 
+                    break
+                
         courier.save()
         return True
 
